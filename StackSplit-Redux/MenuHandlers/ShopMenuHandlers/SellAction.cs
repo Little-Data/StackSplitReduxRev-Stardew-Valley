@@ -19,9 +19,7 @@ namespace StackSplitRedux.MenuHandlers
         /// <param name="item">The item to buy.</param>
         public SellAction(ShopMenu menu, Item item)
             : base(menu, item) {
-            // Default amount
-            // +1 before /2 ensures we get the number rounded UP
-            this.Amount = (this.ClickedItem.Stack + 1) / 2;
+            this.Amount = Math.Min(Mod.Config.DefaultShopAmount, this.ClickedItem.Stack);
             Log.TraceIfD($"[{nameof(SellAction)}] Instantiated for shop {menu} item {item}, GUID = {GUID}");
             }
 

@@ -2,7 +2,7 @@
 
 namespace StackSplitRedux
     {
-    interface IStackSplitAPI
+    public interface IStackSplitAPI
         {
         bool TryRegisterMenu(Type menuType);
         }

@@ -1,3 +1,16 @@
 {
-  "ui.stacksplitmenu.title": "Select Amount"
+  "gmcm.default-crafting-amount.name": "Default cooking/crafting amount",
+  "gmcm.default-crafting-amount.desc": "Default amount when pressing Modifier + RightClick in the Cooking / Crafting menu",
+  "gmcm.default-shop-amount.name": "Default shop amount",
+  "gmcm.default-shop-amount.desc": "Default amount when pressing Modifier + RightClick in a Shop menu",
+  "gmcm.modifier-key.name": "Modifier key",
+  "gmcm.modifier-key.desc": "Hold this key and RightClick to open the split input",
+  "gmcm.debug-mode.name": "Enable debug mode",
+  "gmcm.debug-mode.desc": "Enable detailed logging for troubleshooting",
+  "gmcm.input-box-position.name": "Input box position",
+  "gmcm.input-box-position.desc": "Adjust where the input box appears relative to the mouse cursor",
+  "gmcm.offset-x.name": "Horizontal offset (X)",
+  "gmcm.offset-x.desc": "Positive = right, negative = left. Offset from mouse cursor position (pixels)",
+  "gmcm.offset-y.name": "Vertical offset (Y)",
+  "gmcm.offset-y.desc": "Positive = down, negative = up. Offset from mouse cursor position (pixels)"
 }

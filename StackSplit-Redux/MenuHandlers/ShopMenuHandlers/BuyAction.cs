@@ -78,8 +78,7 @@ namespace StackSplitRedux.MenuHandlers
 
             // Try to purchase the item - method returns true if it should be removed from the shop since there's no more.
             var purchaseMethod = Mod.Reflection.GetMethod(nativeMenu, "tryToPurchaseItem");
-            int index = BuyAction.GetClickedItemIndex(nativeMenu, clickLocation);
-            if (purchaseMethod.Invoke<bool>(chosen, heldItem, amount, clickLocation.X, clickLocation.Y, index)) {
+            if (purchaseMethod.Invoke<bool>(chosen, heldItem, amount, clickLocation.X, clickLocation.Y)) {
                 Log.TraceIfD($"{pfx} Item is limited, reducing stock");
                 // remove the purchased item from the stock etc.
                 nativeMenu.itemPriceAndStock.Remove(chosen);
@@ -97,24 +96,25 @@ namespace StackSplitRedux.MenuHandlers
 
                 Debug.Assert(this.ClickedItem is not null);
                 Item chosen = this.ClickedItem;
-                Dictionary<ISalable, int[]> priceAndStockMap = this.NativeShopMenu.itemPriceAndStock;
+                var priceAndStockMap = this.NativeShopMenu.itemPriceAndStock;
                 Debug.Assert(priceAndStockMap.ContainsKey(chosen));
 
                 // Calculate the number to purchase
-                int[] stockData = priceAndStockMap[chosen];
-                Log.Trace($"{pfx} chosen stockData = {string.Join(", ", stockData)}");
-                int numInStock = stockData[1];
-                int itemPrice = stockData[0];
+                ItemStockInformation stockInfo = priceAndStockMap[chosen];
+                Log.Trace($"{pfx} chosen stockInfo = price={stockInfo.Price}, stock={stockInfo.Stock}");
+                int numInStock = stockInfo.Stock;
+                int itemPrice = stockInfo.Price;
                 int currentMonies;
-                if (itemPrice > 0) {  // using money
+                if (stockInfo.TradeItem is null) {  // using money
                     currentMonies = ShopMenu.getPlayerCurrencyAmount(Game1.player, this.ShopCurrencyType);
                     Log.TraceIfD($"{pfx} player has {currentMonies} of currency {this.ShopCurrencyType} ({this.ShopCurrencyName})");
                     }
-                else {  // barter system. "monies" is now the wanted barter item in [2]
-                    itemPrice = stockData[3];
-                    var barterItem = stockData[2];
-                    currentMonies = Game1.player.getItemCount(barterItem);
-                    Log.TraceIfD($"{pfx} Barter system: player has {currentMonies} of item {barterItem}");
+                else {  // barter system
+                    itemPrice = stockInfo.TradeItemCount ?? 0;
+                    currentMonies = stockInfo.TradeItem is not null
+                        ? Game1.player.Items.CountId(stockInfo.TradeItem)
+                        : 0;
+                    Log.TraceIfD($"{pfx} Barter system: player has {currentMonies} of item {stockInfo.TradeItem ?? "null"}");
                     }
                 Log.Trace($"{pfx} chosen item price is {itemPrice}");
                 Debug.Assert(itemPrice > 0);

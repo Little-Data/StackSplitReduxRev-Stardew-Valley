@@ -17,10 +17,6 @@ namespace StackSplitRedux.MenuHandlers
 
     public interface IMenuHandler
         {
-        /// <summary>Checks if the menu this handler wraps is open.</summary>
-        /// <returns>True if it is open, false otherwise.</returns>
-        bool IsOpen();
-
         /// <summary>Checks the menu is the correct type.</summary>
         bool IsCorrectMenuType(IClickableMenu menu);
 

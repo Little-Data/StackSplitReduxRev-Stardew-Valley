@@ -5,7 +5,7 @@
   "Description": "Custom stack splitting, originally known as StackSplitX",
   "UniqueID": "pepoluan.StackSplitRedux",
   "EntryDll": "StackSplit-Redux.dll",
-  "MinimumApiVersion": "3.8.0",
+  "MinimumApiVersion": "4.0.0",
   "UpdateKeys": [ "Nexus:8967" ],
   "Meta:Repository": "https://github.com/pepoluan/StackSplitRedux",
   "Meta:License": "MIT",

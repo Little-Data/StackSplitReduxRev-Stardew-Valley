@@ -99,6 +99,7 @@ namespace StackSplitRedux.MenuHandlers
         /// <summary>Updates the stack values of the hovered and held item.</summary>
         /// <param name="stackAmount">The amount to be added to the held amount.</param>
         public void SplitSelectedItem(int stackAmount) {
+            if (stackAmount <= 0) return;
             Debug.Assert(this.HoveredItemField != null);
 
             var hoveredItem = this.HoveredItem;
@@ -152,8 +153,7 @@ namespace StackSplitRedux.MenuHandlers
 
         /// <summary>Gets the stack amount you would usually have when shift+right-clicking.</summary>
         public int GetDefaultSplitStackAmount() {
-            // +1 before /2 will round UP the result, the intention of original code
-            return (this.HoveredItem.Stack + 1) / 2;
+            return Math.Min(Mod.Config.DefaultCraftingAmount, this.HoveredItem.Stack);
             }
 
         /// <summary>Removes an item from the native inventory</summary>

@@ -195,7 +195,7 @@ namespace StackSplitRedux.MenuHandlers
 
             try {
                 // Replace the delegates with our own
-                var itemSelectCallbackField = Mod.Reflection.GetField<ItemGrabMenu.behaviorOnItemSelect>(this.NativeMenu, "behaviorFunction");
+                var itemSelectCallbackField = Mod.Reflection.GetField<ItemGrabMenu.behaviorOnItemSelect>(this.NativeMenu, "behaviorOnItemSelect");
                 //var itemGrabCallbackField = typeof(ItemGrabMenu).GetField("behaviorOnItemGrab");
 
                 this.OriginalItemGrabCallback = this.NativeMenu.behaviorOnItemGrab;
@@ -219,7 +219,7 @@ namespace StackSplitRedux.MenuHandlers
                 return;
 
             try {
-                var itemSelectCallbackField = Mod.Reflection.GetField<ItemGrabMenu.behaviorOnItemSelect>(this.NativeMenu, "behaviorFunction");
+                var itemSelectCallbackField = Mod.Reflection.GetField<ItemGrabMenu.behaviorOnItemSelect>(this.NativeMenu, "behaviorOnItemSelect");
                 //var itemGrabCallbackField = typeof(ItemGrabMenu).GetField("behaviorOnItemGrab");
 
                 itemSelectCallbackField.SetValue(this.OriginalItemSelectCallback);

@@ -1,4 +1,5 @@
 ﻿using StackSplitRedux.MenuHandlers;
+using StackSplitRedux.UI;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
@@ -61,6 +62,10 @@ namespace StackSplitRedux
         /// <param name="sender">The event sender.</param>
         /// <param name="e">The event data.</param>
         private void OnMenuChanged(object sender, MenuChangedEventArgs e) {
+            // Ignore menu changes caused by StackSplitOverlay opening/closing
+            if (e.OldMenu is StackSplitOverlay)
+                return;
+
             // menu closed
             if (e.NewMenu == null) {
                 // close the current handler and unsubscribe from the events
@@ -181,7 +186,7 @@ namespace StackSplitRedux
                 }
             }
 
-        private void OnGameLaunched(object semder, GameLaunchedEventArgs e) {
+        private void OnGameLaunched(object sender, GameLaunchedEventArgs e) {
             PrepareModConfigMenu();
             InterceptOtherMods();
             }
@@ -204,9 +209,12 @@ namespace StackSplitRedux
 
         /// <summary>Raised after the player presses a button on the keyboard, controller, or mouse.</summary>
         private void OnButtonPressed(object sender, ButtonPressedEventArgs e) {
+            // When overlay is active, let the game's menu system handle all input
+            if (Game1.activeClickableMenu is StackSplitOverlay)
+                return;
+
             // Forward input to the handler and consumes it while the tooltip is active.
             // Intercept keyboard input while the tooltip is active so numbers don't change the actively equipped item etc.
-            // TODO: remove null checks if these events are only called subscribed when it's valid
             switch (this.CurrentMenuHandler?.HandleInput(e.Button)) {
                 case EInputHandled.Handled:
                     // Obey unless we're hitting 'cancel' keys.
@@ -235,7 +243,7 @@ namespace StackSplitRedux
         /// and cursor).</para></summary>
         private void OnRendered(object sender, RenderedEventArgs e) {
             // tell the current handler to draw the split menu if it's active
-            this.CurrentMenuHandler?.Draw(Game1.spriteBatch);
+            this.CurrentMenuHandler?.Draw(e.SpriteBatch);
             }
 
         private void InterceptOtherMods() {

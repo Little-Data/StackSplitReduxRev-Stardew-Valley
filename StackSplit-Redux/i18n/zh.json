@@ -1,0 +1,16 @@
+{
+  "gmcm.default-crafting-amount.name": "默认烹饪/制作选择数量",
+  "gmcm.default-crafting-amount.desc": "在烹饪/制作菜单中 修饰键 + 右键时的默认选择数量",
+  "gmcm.default-shop-amount.name": "默认商店选择数量",
+  "gmcm.default-shop-amount.desc": "在商店菜单中 修饰键 + 右键时的默认选择数量",
+  "gmcm.modifier-key.name": "修饰键",
+  "gmcm.modifier-key.desc": "按住此键并右键点击以打开拆分输入",
+  "gmcm.debug-mode.name": "启用调试模式",
+  "gmcm.debug-mode.desc": "启用详细日志以协助问题排查",
+  "gmcm.input-box-position.name": "输入框位置",
+  "gmcm.input-box-position.desc": "调整输入框相对于鼠标光标的位置",
+  "gmcm.offset-x.name": "水平偏移 (X)",
+  "gmcm.offset-x.desc": "正数=向右，负数=向左。鼠标光标位置的水平偏移像素",
+  "gmcm.offset-y.name": "垂直偏移 (Y)",
+  "gmcm.offset-y.desc": "正数=向下，负数=向上。鼠标光标位置的垂直偏移像素"
+}

@@ -30,10 +30,6 @@ namespace StackSplitRedux.MenuHandlers
         /// <summary>Where the player clicked when the split menu was opened.</summary>
         protected Point ClickItemLocation { get; private set; }
 
-        /// <summary>Tracks if the menu is currently open.</summary>
-        private bool IsMenuOpen = false;
-
-
         /// <summary>Null constructor that currently only does logging if DEBUG</summary>
         public BaseMenuHandler() {
             Log.TraceIfD($"[{nameof(BaseMenuHandler<TMenuType>)}] Instantiated with TMenuType = {typeof(TMenuType)}");
@@ -41,12 +37,6 @@ namespace StackSplitRedux.MenuHandlers
 
         ~BaseMenuHandler() {
             Log.TraceIfD($"[{nameof(BaseMenuHandler<TMenuType>)}] Finalized for TMenuType = {typeof(TMenuType)}");
-            }
-
-        /// <summary>Checks if the menu this handler wraps is open.</summary>
-        /// <returns>True if it is open, false otherwise.</returns>
-        public virtual bool IsOpen() {
-            return this.IsMenuOpen;
             }
 
         /// <summary>Checks the menu is the correct type.</summary>
@@ -59,7 +49,6 @@ namespace StackSplitRedux.MenuHandlers
         public virtual void Open(IClickableMenu menu) {
             Debug.Assert(IsCorrectMenuType(menu));
             this.NativeMenu = menu as TMenuType;
-            this.IsMenuOpen = true;
 
             if (this.HasInventory)
                 InitInventory();
@@ -67,19 +56,12 @@ namespace StackSplitRedux.MenuHandlers
 
         /// <summary>Notifies the handler that its native menu was closed.</summary>
         public virtual void Close() {
-            this.IsMenuOpen = false;
             this.SplitMenu = null;
             }
 
         /// <summary>Runs on tick for handling things like highlighting text.</summary>
         public virtual void Update() {
-            if (Game1.mouseClickPolling < GetRightClickPollingInterval()) {
-                this.SplitMenu?.Update();
-                }
-            else if (this.SplitMenu != null) {
-                // Close the menu if the interval is reached as the player likely wants its regular behavior
-                CancelMove();
-                }
+            this.SplitMenu?.Update();
             }
 
         /// <summary>Tells the handler to close the split menu.</summary>
@@ -96,6 +78,10 @@ namespace StackSplitRedux.MenuHandlers
         /// <summary>Handle user input.</summary>
         /// <param name="button">The pressed button.</param>
         public EInputHandled HandleInput(SButton button) {
+            // When overlay is active, let the game's menu system handle all input directly
+            if (this.SplitMenu != null)
+                return EInputHandled.NotHandled;
+
             string pfx = $"[{nameof(BaseMenuHandler<TMenuType>)}.{nameof(HandleInput)}]";
 
             // Was right click pressed
@@ -157,8 +143,10 @@ namespace StackSplitRedux.MenuHandlers
                     }
                 return handled;
                 }
-            else if (ShouldConsumeKeyboardInput(button))
+            else if (ShouldConsumeKeyboardInput(button)) {
+                this.SplitMenu?.HandleKeyPress(button);
                 return EInputHandled.Handled;
+                }
 
             return EInputHandled.NotHandled;
             }
@@ -239,9 +227,6 @@ namespace StackSplitRedux.MenuHandlers
                 }
             }
 
-        protected bool IsModifierKeyDown() {
-            return StaticConfig.ModifierKeys.Any(s => Mod.Input.IsDown(s));
-            //return Mod.Input.IsDown(SButton.LeftAlt) || Mod.Input.IsDown(SButton.LeftShift);
-            }
+        protected bool IsModifierKeyDown() => Mod.Config.ModifierKey.IsDown();
         }
     }

@@ -59,11 +59,6 @@ namespace StackSplitRedux.MenuHandlers
             Log.TraceIfD($"[{nameof(ShopAction)}] Finalized for menu = {this.NativeShopMenu}, item = {this.ClickedItem}");
             }
 
-        /// <summary>Gets the size of the stack the action is acting on.</summary>
-        public int GetStackAmount() {
-            return this.Amount;
-            }
-
         /// <summary>Verifies the conditions to perform the action.</summary>
         public abstract bool CanPerformAction();
 
@@ -72,10 +67,5 @@ namespace StackSplitRedux.MenuHandlers
         /// <param name="clickLocation">Where the player clicked.</param>
         public abstract void PerformAction(int amount, Point clickLocation);
 
-        /// <summary>Creates an instance of the action.</summary>
-        /// <returns>The instance or null if no valid item was selected.</returns>
-        public static ShopAction Create() {
-            return null;
-            }
         }
     }

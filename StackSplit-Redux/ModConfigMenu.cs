@@ -1,103 +1,90 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using StardewModdingAPI;
+﻿using StardewModdingAPI;
 using StardewModdingAPI.Utilities;
 using System;
 
 namespace StackSplitRedux
     {
-    public interface IGenericModConfigMenuAPI
+    /// <summary>GMCM 1.16+ API with i18n support via Func&lt;string&gt;.</summary>
+    public interface IGenericModConfigMenuApi
         {
-        void RegisterModConfig(IManifest mod, Action revertToDefault, Action saveToFile);
-        void UnregisterModConfig(IManifest mod);
-        void SetDefaultIngameOptinValue(IManifest mod, bool optedIn);
-        void StartNewPage(IManifest mod, string pageName);
-        void OverridePageDisplayName(IManifest mod, string pageName, string displayName);
-        void RegisterLabel(IManifest mod, string labelName, string labelDesc);
-        void RegisterPageLabel(IManifest mod, string labelName, string labelDesc, string newPage);
-        void RegisterParagraph(IManifest mod, string paragraph);
-        void RegisterImage(IManifest mod, string texPath, Rectangle? texRect = null, int scale = 4);
-        void RegisterSimpleOption(IManifest mod, string optionName, string optionDesc,
-                                  Func<bool> optionGet, Action<bool> optionSet);
-        void RegisterSimpleOption(IManifest mod, string optionName, string optionDesc,
-                                  Func<int> optionGet, Action<int> optionSet);
-        void RegisterSimpleOption(IManifest mod, string optionName, string optionDesc,
-                                  Func<float> optionGet, Action<float> optionSet);
-        void RegisterSimpleOption(IManifest mod, string optionName, string optionDesc,
-                                  Func<string> optionGet, Action<string> optionSet);
-        void RegisterSimpleOption(IManifest mod, string optionName, string optionDesc,
-                                  Func<SButton> optionGet, Action<SButton> optionSet);
-        void RegisterSimpleOption(IManifest mod, string optionName, string optionDesc,
-                                  Func<KeybindList> optionGet, Action<KeybindList> optionSet);
-        void RegisterClampedOption(IManifest mod, string optionName, string optionDesc,
-                                   Func<int> optionGet, Action<int> optionSet,
-                                   int min, int max);
-        void RegisterClampedOption(IManifest mod, string optionName, string optionDesc,
-                                   Func<float> optionGet, Action<float> optionSet,
-                                   float min, float max);
-        void RegisterClampedOption(IManifest mod, string optionName, string optionDesc,
-                                   Func<int> optionGet, Action<int> optionSet,
-                                   int min, int max, int interval);
-        void RegisterClampedOption(IManifest mod, string optionName, string optionDesc,
-                                   Func<float> optionGet, Action<float> optionSet,
-                                   float min, float max, float interval);
-        void RegisterChoiceOption(IManifest mod, string optionName, string optionDesc,
-                                  Func<string> optionGet, Action<string> optionSet,
-                                  string[] choices);
-        void RegisterComplexOption(IManifest mod, string optionName, string optionDesc,
-                                   Func<Vector2, object, object> widgetUpdate,
-                                   Func<SpriteBatch, Vector2, object, object> widgetDraw,
-                                   Action<object> onSave);
-        void SubscribeToChange(IManifest mod, Action<string, bool> changeHandler);
-        void SubscribeToChange(IManifest mod, Action<string, int> changeHandler);
-        void SubscribeToChange(IManifest mod, Action<string, float> changeHandler);
-        void SubscribeToChange(IManifest mod, Action<string, string> changeHandler);
-        void OpenModMenu(IManifest mod);
+        void Register(IManifest mod, Action reset, Action save, bool titleScreenOnly = false);
+        void AddBoolOption(IManifest mod, Func<bool> getValue, Action<bool> setValue, Func<string> name, Func<string> tooltip = null, string fieldId = null);
+        void AddNumberOption(IManifest mod, Func<int> getValue, Action<int> setValue, Func<string> name, Func<string> tooltip = null, int? min = null, int? max = null, int? interval = null, string fieldId = null);
+        void AddTextOption(IManifest mod, Func<string> getValue, Action<string> setValue, Func<string> name, Func<string> tooltip = null, string[] allowedValues = null, Func<string, string> formatAllowedValue = null, string fieldId = null);
+        void AddKeybind(IManifest mod, Func<SButton> getValue, Action<SButton> setValue, Func<string> name, Func<string> tooltip = null, string fieldId = null);
+        void AddKeybindList(IManifest mod, Func<KeybindList> getValue, Action<KeybindList> setValue, Func<string> name, Func<string> tooltip = null, string fieldId = null);
         }
 
     class ModConfigMenu
         {
-        private readonly IGenericModConfigMenuAPI Api;
         private readonly IManifest ModManifest;
         private readonly IModHelper Helper;
 
         internal ModConfigMenu() {
-            this.Api = Mod.Registry.GetApi<IGenericModConfigMenuAPI>("spacechase0.GenericModConfigMenu");
-            if (this.Api is null) {
+            this.Helper = Mod.Instance.Helper;
+            this.ModManifest = Mod.Instance.ModManifest;
+            Register();
+            }
+
+        void Register() {
+            var api = Mod.Registry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
+            if (api is null) {
                 Log.Trace("GMCM not available, skipping Mod Config Menu");
                 return;
                 }
-            this.Helper = Mod.Instance.Helper;
-            this.ModManifest = Mod.Instance.ModManifest;
-            RegisterMenu();
-            }
-
-        void RegisterMenu() {
-            this.Api.RegisterModConfig(
+            api.Register(
                 this.ModManifest,
                 () => Mod.Config = new ModConfig(),
                 () => this.Helper.WriteConfig<ModConfig>(Mod.Config)
                 );
 
-            this.Api.SetDefaultIngameOptinValue(this.ModManifest, true);
-            // Everything from this point on are available in-game
-
-            this.Api.RegisterSimpleOption(
+            api.AddNumberOption(
                 this.ModManifest,
-                "Default cooking/crafting amount",
-                "The default amount when you Shift+RightClick in the Cooking / Crafting menu",
-                () => Mod.Config.DefaultCraftingAmount,   // a function with no input, but outputs value of type T
-                (int value) => Mod.Config.DefaultCraftingAmount = value
+                () => Mod.Config.DefaultCraftingAmount,
+                (int value) => Mod.Config.DefaultCraftingAmount = value,
+                () => Mod.I18n.Get("gmcm.default-crafting-amount.name"),
+                () => Mod.I18n.Get("gmcm.default-crafting-amount.desc")
                 );
 
-            this.Api.RegisterSimpleOption(
+            api.AddNumberOption(
                 this.ModManifest,
-                "Default shop amount",
-                "The default amount when you Shift+RightClick in a Shop menu",
-                () => Mod.Config.DefaultShopAmount,   // a function with no input, but outputs value of type T
-                (int value) => Mod.Config.DefaultShopAmount = value
+                () => Mod.Config.DefaultShopAmount,
+                (int value) => Mod.Config.DefaultShopAmount = value,
+                () => Mod.I18n.Get("gmcm.default-shop-amount.name"),
+                () => Mod.I18n.Get("gmcm.default-shop-amount.desc")
                 );
 
+            api.AddKeybindList(
+                this.ModManifest,
+                () => Mod.Config.ModifierKey,
+                (KeybindList value) => Mod.Config.ModifierKey = value,
+                () => Mod.I18n.Get("gmcm.modifier-key.name"),
+                () => Mod.I18n.Get("gmcm.modifier-key.desc")
+                );
+
+            api.AddBoolOption(
+                this.ModManifest,
+                () => Mod.Config.DebuggingMode,
+                (bool value) => Mod.Config.DebuggingMode = value,
+                () => Mod.I18n.Get("gmcm.debug-mode.name"),
+                () => Mod.I18n.Get("gmcm.debug-mode.desc")
+                );
+
+            api.AddNumberOption(
+                this.ModManifest,
+                () => Mod.Config.InputBoxOffsetX,
+                (int value) => Mod.Config.InputBoxOffsetX = value,
+                () => Mod.I18n.Get("gmcm.offset-x.name"),
+                () => Mod.I18n.Get("gmcm.offset-x.desc")
+                );
+
+            api.AddNumberOption(
+                this.ModManifest,
+                () => Mod.Config.InputBoxOffsetY,
+                (int value) => Mod.Config.InputBoxOffsetY = value,
+                () => Mod.I18n.Get("gmcm.offset-y.name"),
+                () => Mod.I18n.Get("gmcm.offset-y.desc")
+                );
             }
         }
     }
