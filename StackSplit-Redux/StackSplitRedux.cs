@@ -102,7 +102,8 @@ namespace StackSplitRedux
                 EnqueueMenuHandlerOpener(nuMenu, handler);
                 }
             else {
-                Log.TraceIfD($"{nuMenu} not intercepted, don't know how");
+                // Generic fallback: detect inventory-capable menus from any mod
+                HandleUnknownMenu(nuMenu);
                 }
             }
 
@@ -188,7 +189,6 @@ namespace StackSplitRedux
 
         private void OnGameLaunched(object sender, GameLaunchedEventArgs e) {
             PrepareModConfigMenu();
-            InterceptOtherMods();
             }
 
         /// <summary>Subscribes to the events we care about when a handler is active.</summary>
@@ -246,16 +246,24 @@ namespace StackSplitRedux
             this.CurrentMenuHandler?.Draw(e.SpriteBatch);
             }
 
-        private void InterceptOtherMods() {
-            foreach (var kvp in OtherMods.AsEnumerable()) {
-                string modID = kvp.Key;
-                if (!Mod.Registry.IsLoaded(modID)) continue;
-                Log.Debug($"{modID} detected, registering its menus:");
-                foreach (var t in kvp.Value) {
-                    HandlerMapping.Add(t.Item1, t.Item2);
-                    Log.Debug($"  Registered {t.Item1} to be handled by {t.Item2.Name}");
+        private void HandleUnknownMenu(IClickableMenu menu) {
+            try {
+                var type = menu.GetType();
+                var invField = type.GetField("inventory");
+                var grabField = type.GetField("ItemsToGrabMenu");
+                if (invField != null && grabField != null
+                    && typeof(InventoryMenu).IsAssignableFrom(invField.FieldType)
+                    && typeof(InventoryMenu).IsAssignableFrom(grabField.FieldType)) {
+                    HandlerMapping.Add(type, typeof(ItemGrabMenuHandler));
+                    if (this.CurrentMenuHandler != null) {
+                        DequeueMenuHandlerOpener();
+                        this.CurrentMenuHandler.Close();
+                        }
+                    if (HandlerMapping.TryGetHandler(type, out var handler))
+                        EnqueueMenuHandlerOpener(menu, handler);
                     }
                 }
+            catch { }
             }
         }
     }
