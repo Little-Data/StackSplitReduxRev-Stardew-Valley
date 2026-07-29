@@ -70,8 +70,7 @@ namespace StackSplitRedux.MenuHandlers
         /// <summary>Additional checks before opening the split menu.</summary>
         /// <returns>True if it can be opened.</returns>
         protected override bool CanOpenSplitMenu() {
-            // Check the current tab is valid
-            return this.PageHandlers.ContainsKey(this.CurrentTab);
+            return base.CanOpenSplitMenu() && this.PageHandlers.ContainsKey(this.CurrentTab);
             }
 
         /// <summary>Alternative of OpenSplitMenu which is invoked when the generic inventory handler is clicked.</summary>

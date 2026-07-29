@@ -78,6 +78,16 @@ namespace StackSplitRedux.MenuHandlers
         /// <summary>Handle user input.</summary>
         /// <param name="button">The pressed button.</param>
         public EInputHandled HandleInput(SButton button) {
+            try {
+                return HandleInputImpl(button);
+                }
+            catch (Exception e) {
+                Log.Error($"[{nameof(BaseMenuHandler<TMenuType>)}.{nameof(HandleInput)}] Exception: {e}");
+                return EInputHandled.NotHandled;
+                }
+            }
+
+        private EInputHandled HandleInputImpl(SButton button) {
             // When overlay is active, let the game's menu system handle all input directly
             if (this.SplitMenu != null)
                 return EInputHandled.NotHandled;
@@ -174,6 +184,7 @@ namespace StackSplitRedux.MenuHandlers
         /// <summary>Allows derived handlers to provide additional checks before opening the split menu.</summary>
         /// <returns>True if it can be opened.</returns>
         protected virtual bool CanOpenSplitMenu() {
+            if (Game1.player.CursorSlotItem != null) return false;
             return true;
             }
 

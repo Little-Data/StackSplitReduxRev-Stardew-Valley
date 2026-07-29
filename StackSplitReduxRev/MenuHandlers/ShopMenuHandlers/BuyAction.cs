@@ -100,7 +100,11 @@ namespace StackSplitRedux.MenuHandlers
                 Debug.Assert(priceAndStockMap.ContainsKey(chosen));
 
                 // Calculate the number to purchase
-                ItemStockInformation stockInfo = priceAndStockMap[chosen];
+                if (!priceAndStockMap.TryGetValue(chosen, out var stockInfo)) {
+                    Log.Error($"{pfx} chosen item {chosen?.Name} not found in itemPriceAndStock!");
+                    this._MaxPurchasable = 0;
+                    return 0;
+                    }
                 Log.Trace($"{pfx} chosen stockInfo = price={stockInfo.Price}, stock={stockInfo.Stock}");
                 int numInStock = stockInfo.Stock;
                 int itemPrice = stockInfo.Price;

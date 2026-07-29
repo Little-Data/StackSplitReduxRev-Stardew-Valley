@@ -1,6 +1,6 @@
 {
-  "gmcm.default-crafting-amount.name": "Default cooking/crafting amount",
-  "gmcm.default-crafting-amount.desc": "Default amount when pressing Modifier + RightClick in the Cooking / Crafting menu",
+  "gmcm.default-crafting-amount.name": "Default cooking/inventory amount",
+  "gmcm.default-crafting-amount.desc": "Default amount when pressing Modifier + RightClick in Cooking / Inventory",
   "gmcm.default-shop-amount.name": "Default shop amount",
   "gmcm.default-shop-amount.desc": "Default amount when pressing Modifier + RightClick in a Shop menu",
   "gmcm.modifier-key.name": "Modifier key",

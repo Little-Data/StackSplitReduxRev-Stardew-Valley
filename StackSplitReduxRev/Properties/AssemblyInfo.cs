@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("StackSplitX-Redux")]
-[assembly: AssemblyDescription("StackSplitX Redux -- specify how many items to split from stack")]
+[assembly: AssemblyTitle("StackSplitReduxRev")]
+[assembly: AssemblyDescription("StackSplitReduxRev -- specify how many items to split from stack")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("pepoluan")]
-[assembly: AssemblyProduct("StackSplitX-Redux")]
-[assembly: AssemblyCopyright("Copyright © 2021 pepoluan")]
+[assembly: AssemblyCompany("little-data")]
+[assembly: AssemblyProduct("StackSplitReduxRev")]
+[assembly: AssemblyCopyright("Copyright © 2026 little-data")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.14.3.24")]
-[assembly: AssemblyFileVersion("0.14.3.24")]
+[assembly: AssemblyVersion("0.14.4.00")]
+[assembly: AssemblyFileVersion("0.14.4.00")]

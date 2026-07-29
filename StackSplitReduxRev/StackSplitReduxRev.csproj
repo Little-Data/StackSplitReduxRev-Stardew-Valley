@@ -2,16 +2,16 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <LangVersion>latest</LangVersion>
-    <RootNamespace>StackSplitRedux</RootNamespace>
-    <AssemblyName>StackSplit-Redux</AssemblyName>
-    <Version>0.14.3.24</Version>
+    <RootNamespace>StackSplitReduxRev</RootNamespace>
+    <AssemblyName>StackSplitReduxRev</AssemblyName>
+    <Version>0.14.4.00</Version>
     <Nullable>disable</Nullable>
     <DebugType>none</DebugType>
     <NoWarn>CS9057</NoWarn>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <EnableModDeploy>true</EnableModDeploy>
+    <EnableModDeploy>false</EnableModDeploy>
     <EnableModZip>true</EnableModZip>
-    <ModFolderName>StackSplit-Redux</ModFolderName>
+    <ModFolderName>StackSplitReduxRev</ModFolderName>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.4.0" />

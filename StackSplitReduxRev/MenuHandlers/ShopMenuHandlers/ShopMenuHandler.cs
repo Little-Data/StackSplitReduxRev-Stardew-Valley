@@ -1,4 +1,5 @@
-﻿using StackSplitRedux.UI;
+﻿using System;
+using StackSplitRedux.UI;
 using StardewValley.Menus;
 
 namespace StackSplitRedux.MenuHandlers
@@ -15,6 +16,11 @@ namespace StackSplitRedux.MenuHandlers
             : base() {
             }
 
+        protected override bool CanOpenSplitMenu() {
+            if (this.NativeMenu.heldItem != null) return false;
+            return base.CanOpenSplitMenu();
+            }
+
         /// <summary>Alternative of OpenSplitMenu which is invoked when the generic inventory handler is clicked.</summary>
         /// <returns>If the input was handled or consumed.</returns>
         protected override EInputHandled InventoryClicked() {
@@ -26,7 +32,13 @@ namespace StackSplitRedux.MenuHandlers
         /// <returns>If the input was handled or consumed.</returns>
         protected override EInputHandled OpenSplitMenu() {
             Log.TraceIfD($"[{nameof(ShopMenuHandler)}.{nameof(OpenSplitMenu)}] Entered");
-            this.CurrentShopAction = BuyAction.Create(this.NativeMenu, this.ClickItemLocation);
+            try {
+                this.CurrentShopAction = BuyAction.Create(this.NativeMenu, this.ClickItemLocation);
+                }
+            catch (Exception e) {
+                Log.Error($"[ShopMenuHandler.OpenSplitMenu] BuyAction.Create failed: {e}");
+                return EInputHandled.NotHandled;
+                }
             return TryOpenSplitMenu(this.CurrentShopAction);
             }
 

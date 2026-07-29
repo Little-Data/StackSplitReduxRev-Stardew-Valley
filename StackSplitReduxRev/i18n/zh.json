@@ -1,8 +1,8 @@
 {
-  "gmcm.default-crafting-amount.name": "默认烹饪/制作选择数量",
-  "gmcm.default-crafting-amount.desc": "在烹饪/制作菜单中 修饰键 + 右键时的默认选择数量",
+  "gmcm.default-crafting-amount.name": "默认烹饪/背包中选择数量",
+  "gmcm.default-crafting-amount.desc": "在烹饪/背包中按下 修饰键 + 右键 时的默认选择数量",
   "gmcm.default-shop-amount.name": "默认商店选择数量",
-  "gmcm.default-shop-amount.desc": "在商店菜单中 修饰键 + 右键时的默认选择数量",
+  "gmcm.default-shop-amount.desc": "在商店菜单中按下 修饰键 + 右键 时的默认选择数量",
   "gmcm.modifier-key.name": "修饰键",
   "gmcm.modifier-key.desc": "按住此键并右键点击以打开拆分输入",
   "gmcm.debug-mode.name": "启用调试模式",

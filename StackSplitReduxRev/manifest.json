@@ -1,13 +1,13 @@
 {
-  "Name": "Stack Split Redux",
-  "Author": "pepoluan, tstaples (original idea)",
-  "Version": "0.14.3",
+  "Name": "StackSplitReduxRev",
+  "Author": "pepoluan, tstaples (original idea), little-data",
+  "Version": "0.14.4",
   "Description": "Custom stack splitting, originally known as StackSplitX",
-  "UniqueID": "pepoluan.StackSplitRedux",
-  "EntryDll": "StackSplit-Redux.dll",
+  "UniqueID": "littledata.StackSplitReduxRev",
+  "EntryDll": "StackSplitReduxRev.dll",
   "MinimumApiVersion": "4.0.0",
-  "UpdateKeys": [ "Nexus:8967" ],
-  "Meta:Repository": "https://github.com/pepoluan/StackSplitRedux",
+  "UpdateKeys": [ "GitHub:Little-Data/StackSplitReduxRev-Stardew-Valley" ],
+  "Meta:Repository": "https://github.com/Little-Data/StackSplitReduxRev-Stardew-Valley",
   "Meta:License": "MIT",
   "Meta:ChangeLog": {
     "0.9.0": "Initial release",
@@ -23,6 +23,7 @@
     "0.14.0": "Automatically cap number to MaxPurchasable",
     "0.14.1": "BuyAction.CanPerformAction now uses MaxPurchasable instead of simple item.sellPrice",
     "0.14.2": "Enable animation",
-    "0.14.3": "React properly to <menu>.emergencyShutdown"
+    "0.14.3": "React properly to <menu>.emergencyShutdown",
+    "0.14.4": "Supports version 1.6 and enhances and fixes many features"
   }
 }

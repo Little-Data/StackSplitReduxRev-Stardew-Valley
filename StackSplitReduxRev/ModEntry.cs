@@ -41,7 +41,7 @@
                 }
             if (conflict) {
                 Log.Error("Conflicting mods detected! Will abort loading this mod to prevent conflict/issues!");
-                Log.Error("Please upload the log to https://smapi.io/log and tell pepoluan about this!");
+                Log.Error("Please upload the log to https://smapi.io/log and tell about this!");
                 }
             return conflict;
             }

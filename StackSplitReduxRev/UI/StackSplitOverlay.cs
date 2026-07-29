@@ -29,10 +29,11 @@ namespace StackSplitRedux.UI
             this._text = defaultAmount.ToString();
             this.OnSubmit = onSubmit;
 
-            int x = Game1.getMouseX() + Mod.Config.InputBoxOffsetX;
-            int y = Game1.getMouseY() + Mod.Config.InputBoxOffsetY;
             int width = Game1.tileSize * 2;
             int height = Game1.tileSize;
+            int totalWidth = width + Game1.pixelZoom + Game1.tileSize + Game1.pixelZoom * 2 + Game1.tileSize;
+            int x = Math.Clamp(Game1.getMouseX() + Mod.Config.InputBoxOffsetX, 0, Game1.uiViewport.Width - totalWidth);
+            int y = Math.Clamp(Game1.getMouseY() + Mod.Config.InputBoxOffsetY, 0, Game1.uiViewport.Height - height);
 
             this.TextBoxBounds = new Rectangle(x, y, width, height);
 
