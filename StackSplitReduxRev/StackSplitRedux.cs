@@ -1,4 +1,5 @@
-﻿using StackSplitRedux.MenuHandlers;
+﻿using System;
+using StackSplitRedux.MenuHandlers;
 using StackSplitRedux.UI;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -49,6 +50,7 @@ namespace StackSplitRedux
             HandlerMapping.Add(typeof(ItemGrabMenu), typeof(ItemGrabMenuHandler));
             HandlerMapping.Add(typeof(CraftingPage), typeof(CraftingMenuHandler));
             HandlerMapping.Add(typeof(JunimoNoteMenu), typeof(JunimoNoteMenuHandler));
+            HandlerMapping.Add(typeof(GeodeMenu), typeof(InventoryOnlyHandler));
             }
 
         public void RegisterEvents() {
@@ -254,16 +256,24 @@ namespace StackSplitRedux
                 if (invField != null && grabField != null
                     && typeof(InventoryMenu).IsAssignableFrom(invField.FieldType)
                     && typeof(InventoryMenu).IsAssignableFrom(grabField.FieldType)) {
-                    HandlerMapping.Add(type, typeof(ItemGrabMenuHandler));
-                    if (this.CurrentMenuHandler != null) {
-                        DequeueMenuHandlerOpener();
-                        this.CurrentMenuHandler.Close();
-                        }
-                    if (HandlerMapping.TryGetHandler(type, out var handler))
-                        EnqueueMenuHandlerOpener(menu, handler);
+                    RegisterForHandler(menu, type, typeof(ItemGrabMenuHandler));
+                    }
+                else if (invField != null && typeof(InventoryMenu).IsAssignableFrom(invField.FieldType)) {
+                    RegisterForHandler(menu, type, typeof(InventoryOnlyHandler));
                     }
                 }
             catch { }
+            }
+
+        private void RegisterForHandler(IClickableMenu menu, Type menuType, Type handlerType) {
+            if (HandlerMapping.TryGetHandler(menuType, out _)) return;
+            HandlerMapping.Add(menuType, handlerType);
+            if (this.CurrentMenuHandler != null) {
+                DequeueMenuHandlerOpener();
+                this.CurrentMenuHandler.Close();
+                }
+            if (HandlerMapping.TryGetHandler(menuType, out var handler))
+                EnqueueMenuHandlerOpener(menu, handler);
             }
         }
     }

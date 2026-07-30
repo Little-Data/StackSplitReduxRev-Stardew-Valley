@@ -87,28 +87,36 @@ Refer to existing translations in the `i18n` folder and create a new JSON langua
 
 ## Third-Party Mod Integration
 
-Other mods can register custom menus via the API in their `ModEntry.cs` (or main entry file) `Entry()` method to enable stack splitting:
+### API
+
+Unique ID: `littledata.StackSplitReduxRev`
+
+Interface: `StackSplitRedux.IStackSplitAPI`
+
+Method: `bool TryRegisterMenu(Type menuType)`
+
+Registers a handler for the given menu type. Returns `true` if a matching handler was found and registered (e.g., the menu inherits from `ShopMenu`, `ItemGrabMenu`, etc.), `false` otherwise.
+
+Add this to your `ModEntry.cs` `Entry()` method:
 
 ```csharp
 public override void Entry(IModHelper helper)
 {
-    var stackSplit = helper.ModRegistry.GetApi<StackSplitRedux.IStackSplitAPI>("littledata.StackSplitReduxRev");
-    if (stackSplit != null)
-    {
-        stackSplit.TryRegisterMenu(typeof(MyCustomMenu));
-    }
+    var api = helper.ModRegistry.GetApi<StackSplitRedux.IStackSplitAPI>("littledata.StackSplitReduxRev");
+    api?.TryRegisterMenu(typeof(MyCustomMenu));
 }
 ```
 
-The registered menu must have a public field named `inventory` of type `InventoryMenu`.
+### Auto-Detection (No Code Required)
 
-### Auto-Detection
+The mod automatically detects menus with the following field patterns and registers the appropriate handler, no integration code needed:
 
-The mod automatically detects menus that have both of the following fields and registers `ItemGrabMenuHandler` automatically, no integration code needed from third-party mods:
-- `inventory` field (`InventoryMenu`)
-- `ItemsToGrabMenu` field (`InventoryMenu`)
+| Detection | Registered Handler | Behavior |
+|-----------|-------------------|----------|
+| Both `inventory` + `ItemsToGrabMenu` fields (`InventoryMenu`) | `ItemGrabMenuHandler` | Split/transfer between two inventories |
+| `inventory` field (`InventoryMenu`) without `ItemsToGrabMenu` | `InventoryOnlyHandler` | Single-inventory split (e.g., Geode Menu) |
 
-If your mod's menu meets these criteria, it works out of the box.
+Custom menus matching these criteria work out of the box.
 
 ## Project History
 

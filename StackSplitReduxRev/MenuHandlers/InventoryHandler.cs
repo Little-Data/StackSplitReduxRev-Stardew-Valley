@@ -35,6 +35,7 @@ namespace StackSplitRedux.MenuHandlers
 
         /// <summary>Currently hovered item in the inventory.</summary>
         private Item HoveredItem;
+        public Item GetHoveredItem() => this.HoveredItem;
 
         /// <summary>Null constructor that currently only invokes the base null constructor</summary>
         public InventoryHandler() {
@@ -158,7 +159,7 @@ namespace StackSplitRedux.MenuHandlers
 
         /// <summary>Removes an item from the native inventory</summary>
         /// <param name="item">The item to remove.</param>
-        private void RemoveItemFromInventory(Item item) {
+        public void RemoveItemFromInventory(Item item) {
             var index = this.InventoryItems.IndexOf(item);
             if (index >= 0 && index < this.InventoryItems.Count) {
                 this.InventoryItems[index] = null;

@@ -1,7 +1,7 @@
 {
   "Name": "StackSplitReduxRev",
   "Author": "pepoluan, tstaples (original idea), little-data",
-  "Version": "0.14.4",
+  "Version": "0.14.5",
   "Description": "Custom stack splitting, originally known as StackSplitX",
   "UniqueID": "littledata.StackSplitReduxRev",
   "EntryDll": "StackSplitReduxRev.dll",

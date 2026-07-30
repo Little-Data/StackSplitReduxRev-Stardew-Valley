@@ -89,28 +89,36 @@ dotnet build -c Release /p:GamePath="[GamePath]"
 
 ## 第三方模组集成
 
-其他模组可在其 `ModEntry.cs`（或主入口文件）的 `Entry()` 方法中调用 API 注册自定义菜单，获得堆叠拆分功能：
+### API
+
+唯一ID：`littledata.StackSplitReduxRev`
+
+接口：`StackSplitRedux.IStackSplitAPI`
+
+方法：`bool TryRegisterMenu(Type menuType)`
+
+注册指定菜单类型的处理器。如果该类型已有对应的处理器（如继承 `ShopMenu`、`ItemGrabMenu` 等），则注册成功并返回 `true`，否则返回 `false`。
+
+在 `ModEntry.cs` 的 `Entry()` 中：
 
 ```csharp
 public override void Entry(IModHelper helper)
 {
-    var stackSplit = helper.ModRegistry.GetApi<StackSplitRedux.IStackSplitAPI>("littledata.StackSplitReduxRev");
-    if (stackSplit != null)
-    {
-        stackSplit.TryRegisterMenu(typeof(MyCustomMenu));
-    }
+    var api = helper.ModRegistry.GetApi<StackSplitRedux.IStackSplitAPI>("littledata.StackSplitReduxRev");
+    api?.TryRegisterMenu(typeof(MyCustomMenu));
 }
 ```
 
-注册的菜单需要包含名为 `inventory` 的 `InventoryMenu` 公共字段。
+### 自动检测（无需代码）
 
-### 自动检测
+本模组会自动检测以下特征的菜单并注册对应的处理器，无需第三方模组编写任何代码：
 
-本模组会自动检测同时包含以下字段的菜单，自动注册 `ItemGrabMenuHandler`，无需第三方模组编写任何集成代码：
-- `inventory` 字段（`InventoryMenu`）
-- `ItemsToGrabMenu` 字段（`InventoryMenu`）
+| 检测条件 | 注册的处理器 | 效果 |
+|---------|------------|------|
+| 同时有 `inventory` + `ItemsToGrabMenu` 字段 (`InventoryMenu`) | `ItemGrabMenuHandler` | 支持两栏库存间拆分转移 |
+| 有 `inventory` 字段 (`InventoryMenu`) 但不含 `ItemsToGrabMenu` | `InventoryOnlyHandler` | 支持单栏库存拆分（如铁匠砸晶石界面） |
 
-如果你的模组菜单满足此条件，开箱即用。
+满足以上条件的自定义菜单开箱即用。
 
 ## 项目历史
 

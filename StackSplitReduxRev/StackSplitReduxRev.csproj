@@ -4,7 +4,7 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>StackSplitReduxRev</RootNamespace>
     <AssemblyName>StackSplitReduxRev</AssemblyName>
-    <Version>0.14.4.00</Version>
+    <Version>0.14.5.00</Version>
     <Nullable>disable</Nullable>
     <DebugType>none</DebugType>
     <NoWarn>CS9057</NoWarn>
