@@ -31,8 +31,18 @@ Configure via [Generic Mod Config Menu](https://www.nexusmods.com/stardewvalley/
 | Default shop amount | 5 | Default amount when pressing Modifier + RightClick in a Shop menu |
 | Modifier key | LeftShift | Hold this key and RightClick to open the split input |
 | Enable debug mode | false | Enable detailed logging for troubleshooting |
-| Horizontal offset (X) | 0 | Positive = right, negative = left |
-| Vertical offset (Y) | -64 | Positive = down, negative = up |
+| Support other mods' menus | true | Automatically split inside inventory menus added by other mods; turn off if one misbehaves |
+| Show "can't split" hint | true | Show a hint when the clicked item cannot be split |
+| "Can't split" hint text | Cannot be split or stacked. | Leave empty to use the built-in text |
+| Hint display time (seconds) | 2 | How long the hint stays on screen (no fade) |
+| Hint position offset (X) | 0 | Horizontal offset from the cursor, positive = right |
+| Hint position offset (Y) | 0 | Vertical offset from the cursor, positive = down |
+| Hint text size (%) | 100 | Percentage of the game's small font |
+| Hint outline thickness | 2 | Black outline in pixels, 0 = none |
+| Hint shadow strength (%) | 0 | 0 = no shadow |
+| Hint text colour | #FFFFFF | Hex colour such as `#FFFFFF`, `#FFF` or `#AARRGGBB` |
+| Horizontal offset (X) | 0 | Input box offset from the cursor, positive = right |
+| Vertical offset (Y) | -64 | Input box offset from the cursor, positive = down |
 
 Cancel operations with: Esc, E, cancel button, clicking elsewhere, or entering 0. Confirm with Enter or OK button.
 
@@ -45,6 +55,16 @@ Edit `config.json` in the mod folder:
   "DefaultCraftingAmount": 1,
   "DefaultShopAmount": 5,
   "DebuggingMode": false,
+  "EnableGenericMenuSupport": true,
+  "ShowCannotSplitHint": true,
+  "CannotSplitMessage": "",
+  "HintDurationSeconds": 2,
+  "HintOffsetX": 0,
+  "HintOffsetY": 0,
+  "HintTextScalePercent": 100,
+  "HintOutlineThickness": 2,
+  "HintShadowStrength": 0,
+  "HintTextColor": "#FFFFFF",
   "ModifierKey": "LeftShift",
   "InputBoxOffsetX": 0,
   "InputBoxOffsetY": -64
@@ -95,7 +115,14 @@ Interface: `StackSplitRedux.IStackSplitAPI`
 
 Method: `bool TryRegisterMenu(Type menuType)`
 
-Registers a handler for the given menu type. Returns `true` if a matching handler was found and registered (e.g., the menu inherits from `ShopMenu`, `ItemGrabMenu`, etc.), `false` otherwise.
+Registers a **menu type** with the handler it resolves to. It returns `true` only when the type or one of its base classes already has a handler, for example:
+
+- types derived from a supported menu: `ShopMenu`, `ItemGrabMenu`, `GameMenu`, `CraftingPage`, `JunimoNoteMenu`, `GeodeMenu`, `QuestContainerMenu`, `StorageContainer`;
+- or types that were already registered by auto-detection.
+
+A brand-new unrelated menu type returns `false` (the debug log says why). In that case rely on the structural auto-detection below, or give the menu the same members.
+
+Registration is per type, no instance is needed; the type is checked again when the menu actually opens, so a mismatched handler is never attached.
 
 Add this to your `ModEntry.cs` `Entry()` method:
 
@@ -109,14 +136,26 @@ public override void Entry(IModHelper helper)
 
 ### Auto-Detection (No Code Required)
 
-The mod automatically detects menus with the following field patterns and registers the appropriate handler, no integration code needed:
+As long as "Support other mods' menus" (`EnableGenericMenuSupport`, on by default) is enabled, the mod recognises unknown menus by their **members** (not by class name or namespace) and registers the matching handler:
 
-| Detection | Registered Handler | Behavior |
-|-----------|-------------------|----------|
-| Both `inventory` + `ItemsToGrabMenu` fields (`InventoryMenu`) | `ItemGrabMenuHandler` | Split/transfer between two inventories |
-| `inventory` field (`InventoryMenu`) without `ItemsToGrabMenu` | `InventoryOnlyHandler` | Single-inventory split (e.g., Geode Menu) |
+| Detection | Handler | Behavior |
+|-----------|---------|----------|
+| The type is `ItemGrabMenu` or derives from it | `ItemGrabMenuHandler` | Split in both the container and the player inventory |
+| Container-shaped menu: has `ItemsToGrabMenu` (`InventoryMenu`), or has `inventory` and derives from `MenuWithInventory` | `ContainerMenuHandler` | Player inventory can be split; the container pane depends on what the menu offers |
+| Any other menu with the player's `inventory` and a readable/writable `heldItem` | `InventoryOnlyHandler` | Single-inventory split (e.g. Geode Menu) |
+| None of the above | not handled | Left entirely to the vanilla game |
 
-Custom menus matching these criteria work out of the box.
+Whether the container pane can be split depends on what the menu itself offers, in this order:
+
+1. `TryToGrab(Item, int)` / `TryToPlace(Item, int)` exist: items move through the menu's own methods, so its counters/scores stay in sync;
+2. a readable/writable `heldItem` exists and there is no item-change callback: split items are put on the menu's own cursor;
+3. the menu has an item-change callback (e.g. the fair grange display) or no safe way to move items: the container pane is left to vanilla, only the player inventory is handled.
+
+Notes:
+
+- Split items need a cursor the menu actually **draws** (`heldItem`, or the player cursor on the inventory page). Without one the mod refuses to split rather than park items where they cannot be seen.
+- If a menu type fails at runtime, only that type is disabled (and logged); other menus keep working.
+- Turning "Support other mods' menus" off disables all of the above auto-detection; only the built-in known menus (see the API section) are still handled.
 
 ## Project History
 

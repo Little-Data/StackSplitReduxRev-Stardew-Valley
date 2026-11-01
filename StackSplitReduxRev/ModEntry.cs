@@ -24,6 +24,17 @@
 
             Log.Info($"{this.ModManifest.UniqueID} version {typeof(Mod).Assembly.GetName().Version} (API version {API.Version}) is loading...");
             Mod.Config = helper.ReadConfig<ModConfig>();
+            Log.TraceIfD(
+                $"[{nameof(Mod)}] Config loaded: DefaultCraftingAmount={Mod.Config.DefaultCraftingAmount}, " +
+                $"DefaultShopAmount={Mod.Config.DefaultShopAmount}, ModifierKey={Mod.Config.ModifierKey}, " +
+                $"DebuggingMode={Mod.Config.DebuggingMode}, EnableGenericMenuSupport={Mod.Config.EnableGenericMenuSupport}, " +
+                $"ShowCannotSplitHint={Mod.Config.ShowCannotSplitHint}, HintDurationSeconds={Mod.Config.HintDurationSeconds}, " +
+                $"HintOffsetX={Mod.Config.HintOffsetX}, HintOffsetY={Mod.Config.HintOffsetY}, " +
+                $"HintTextScalePercent={Mod.Config.HintTextScalePercent}, HintOutlineThickness={Mod.Config.HintOutlineThickness}, " +
+                $"HintShadowStrength={Mod.Config.HintShadowStrength}, HintTextColor=\"{Mod.Config.HintTextColor}\", " +
+                $"CannotSplitMessage=\"{Mod.Config.CannotSplitMessage}\", InputBoxOffsetX={Mod.Config.InputBoxOffsetX}, " +
+                $"InputBoxOffsetY={Mod.Config.InputBoxOffsetY}"
+                );
             Mod.StackSplitRedux = new();
             }
 

@@ -30,6 +30,9 @@ namespace StackSplitRedux.MenuHandlers
         /// <summary>The item to be bought/sold.</summary>
         protected Item ClickedItem = null;
 
+        /// <summary>The item this action would act on, for callers that need to inspect it.</summary>
+        public Item TargetItem => this.ClickedItem;
+
         /// <summary>The number of items in the transaction.</summary>
         protected int Amount { get; set; } = 0;
 

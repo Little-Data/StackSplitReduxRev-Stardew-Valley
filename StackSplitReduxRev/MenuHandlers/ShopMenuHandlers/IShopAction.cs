@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using StardewValley;
 
 namespace StackSplitRedux.MenuHandlers
     {
@@ -6,6 +7,9 @@ namespace StackSplitRedux.MenuHandlers
         {
         /// <summary>Gets the size of the stack the action is acting on.</summary>
         int StackAmount { get; }
+
+        /// <summary>Gets the item the action is acting on, or <c>null</c> if none was found.</summary>
+        Item TargetItem { get; }
 
         /// <summary>Verifies the conditions to perform the action.</summary>
         bool CanPerformAction();

@@ -5,7 +5,6 @@ using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Menus;
 using System;
-using System.Diagnostics;
 using System.Linq;
 
 namespace StackSplitRedux.MenuHandlers
@@ -22,10 +21,44 @@ namespace StackSplitRedux.MenuHandlers
         protected StackSplitMenu SplitMenu;
 
         /// <summary>Native game menu this handler is for.</summary>
-        protected TMenuType NativeMenu { get; private set; }
+        /// <remarks>The setter is protected so a handler can drop its reference when it refuses a menu.</remarks>
+        protected TMenuType NativeMenu { get; set; }
 
         /// <summary>Does this menu have an inventory section.</summary>
         protected bool HasInventory { get; set; } = true;
+
+        /// <summary>Whether the handler threw while driving the last menu it was given.</summary>
+        public bool Faulted { get; private set; }
+
+        /// <summary>The menu type that caused <see cref="Faulted"/>, or <c>null</c>.</summary>
+        public Type FaultedMenuType { get; private set; }
+
+        /// <summary>The concrete type of the last menu this handler accepted.</summary>
+        /// <remarks>
+        /// Kept after <see cref="Close"/> so a failure can still be blamed on the menu that caused it, even after that
+        /// menu is gone. Blaming whatever menu happens to be active would disable an innocent menu type.
+        /// </remarks>
+        public Type OpenedMenuType { get; protected set; }
+
+        /// <summary>Clears <see cref="Faulted"/> so the handler can be used for other menus again.</summary>
+        public void ClearFault() {
+            this.Faulted = false;
+            this.FaultedMenuType = null;
+            }
+
+        /// <summary>Records that the handler failed on the menu it is currently attached to.</summary>
+        /// <param name="e">The exception that was caught.</param>
+        /// <param name="memberName">The member the exception came from, for the log.</param>
+        protected void MarkFault(Exception e, string memberName) {
+            this.Faulted = true;
+            // Never fall back to the active menu: it may belong to someone else, and disabling its type would remove
+            // stack splitting from a menu that never failed.
+            this.FaultedMenuType = this.OpenedMenuType ?? this.NativeMenu?.GetType();
+            Log.ErrorAlways(
+                $"[{nameof(BaseMenuHandler<TMenuType>)}.{memberName}] Handler {this.GetType().Name} failed on menu " +
+                $"{this.FaultedMenuType?.FullName ?? "unknown"}: {e}"
+                );
+            }
 
         /// <summary>Where the player clicked when the split menu was opened.</summary>
         protected Point ClickItemLocation { get; private set; }
@@ -40,39 +73,86 @@ namespace StackSplitRedux.MenuHandlers
             }
 
         /// <summary>Checks the menu is the correct type.</summary>
-        public bool IsCorrectMenuType(IClickableMenu menu) {
+        public virtual bool IsCorrectMenuType(IClickableMenu menu) {
             return menu is TMenuType;
             }
 
         /// <summary>Notifies the handler that its native menu has been opened.</summary>
         /// <param name="menu">The menu that was opened.</param>
+        /// <remarks>
+        /// Guard instead of <c>Debug.Assert</c>: the mod may be built with DEBUG defined, and in .NET 6 a failed assert
+        /// calls <c>Environment.FailFast</c>, which terminates the game process without any SMAPI error. An unsupported
+        /// menu must never take the whole game down.
+        /// </remarks>
         public virtual void Open(IClickableMenu menu) {
-            Debug.Assert(IsCorrectMenuType(menu));
-            this.NativeMenu = menu as TMenuType;
+            if (menu is not TMenuType nativeMenu) {
+                Log.WarnAlways(
+                    $"[{nameof(BaseMenuHandler<TMenuType>)}] Ignored menu {menu?.GetType().FullName ?? "null"}; " +
+                    $"this handler only supports {typeof(TMenuType).FullName}."
+                    );
+                this.NativeMenu = default;
+                this.OpenedMenuType = null;
+                return;
+                }
+
+            this.NativeMenu = nativeMenu;
+            this.OpenedMenuType = nativeMenu.GetType();
+            Log.TraceIfD(
+                $"[{nameof(BaseMenuHandler<TMenuType>)}] {this.GetType().Name}.Open({nativeMenu.GetType().FullName}), " +
+                $"HasInventory={this.HasInventory}"
+                );
 
             if (this.HasInventory)
                 InitInventory();
+
+            Log.TraceIfD(
+                $"[{nameof(BaseMenuHandler<TMenuType>)}] {this.GetType().Name} ready: inventoryInitialized={this.InvHandler.Initialized}"
+                );
             }
 
         /// <summary>Notifies the handler that its native menu was closed.</summary>
         public virtual void Close() {
+            Log.TraceIfD($"[{nameof(BaseMenuHandler<TMenuType>)}] {this.GetType().Name}.Close()");
+            // Force the amount input box closed first. It is the game's active menu, so dropping our reference without
+            // closing it would leave the box on screen (or restore a menu that is already gone).
+            try {
+                this.CloseSplitMenu();
+                }
+            catch (Exception e) {
+                Log.ErrorAlways($"[{nameof(BaseMenuHandler<TMenuType>)}.{nameof(Close)}] {e}");
+                }
             this.SplitMenu = null;
+            this.InvHandler.Reset();
+            // Drop the reference: a handler singleton outlives the menu, and acting on a closed menu is never valid.
+            this.NativeMenu = default;
             }
 
         /// <summary>Runs on tick for handling things like highlighting text.</summary>
         public virtual void Update() {
-            this.SplitMenu?.Update();
+            try {
+                this.SplitMenu?.Update();
+                }
+            catch (Exception e) {
+                this.MarkFault(e, nameof(Update));
+                }
             }
 
         /// <summary>Tells the handler to close the split menu.</summary>
         public virtual void CloseSplitMenu() {
+            if (this.SplitMenu is not null)
+                Log.TraceIfD($"[{nameof(BaseMenuHandler<TMenuType>)}] {this.GetType().Name} closing the split box");
             this.SplitMenu?.Close();
             this.SplitMenu = null;
             }
 
         /// <summary>Draws the split menu.</summary>
         public virtual void Draw(SpriteBatch spriteBatch) {
-            this.SplitMenu?.Draw(spriteBatch);
+            try {
+                this.SplitMenu?.Draw(spriteBatch);
+                }
+            catch (Exception e) {
+                this.MarkFault(e, nameof(Draw));
+                }
             }
 
         /// <summary>Handle user input.</summary>
@@ -82,12 +162,15 @@ namespace StackSplitRedux.MenuHandlers
                 return HandleInputImpl(button);
                 }
             catch (Exception e) {
-                Log.Error($"[{nameof(BaseMenuHandler<TMenuType>)}.{nameof(HandleInput)}] Exception: {e}");
+                this.MarkFault(e, nameof(HandleInput));
                 return EInputHandled.NotHandled;
                 }
             }
 
         private EInputHandled HandleInputImpl(SButton button) {
+            // The handler is a singleton: between menus it has no native menu, so there is nothing to react to.
+            if (this.NativeMenu is null) return EInputHandled.NotHandled;
+
             // When overlay is active, let the game's menu system handle all input directly
             if (this.SplitMenu != null)
                 return EInputHandled.NotHandled;
@@ -98,6 +181,7 @@ namespace StackSplitRedux.MenuHandlers
             if (button == SButton.MouseRight) {
                 // Invoke split menu if the modifier key was also down
                 if (IsModifierKeyDown() && CanOpenSplitMenu()) {
+                    Log.TraceIfD($"{pfx} Modifier + right click accepted by {this.GetType().Name}");
                     // Cancel the current operation
                     if (this.SplitMenu != null) {
                         // TODO: return this value if it's consumed?
@@ -134,7 +218,12 @@ namespace StackSplitRedux.MenuHandlers
                     Log.TraceIfD($"{pfx} Jumping to OpenSplitMenu");
                     return OpenSplitMenu();
                     }
-                return EInputHandled.NotHandled;
+
+                Log.TraceIfD(
+                    $"{pfx} Right click not used for splitting: modifier={IsModifierKeyDown()}, " +
+                    $"canOpen={CanOpenSplitMenu()}, splitBoxOpen={this.SplitMenu is not null}"
+                    );
+                return HandleRightClick();
                 }
             else if (button == SButton.MouseLeft) {
                 var mX = Game1.getMouseX(true);
@@ -168,6 +257,12 @@ namespace StackSplitRedux.MenuHandlers
             return EInputHandled.NotHandled;
             }
 
+        /// <summary>Allows derived classes to handle right clicks that did not open the split menu.</summary>
+        /// <returns>If the input was handled or consumed.</returns>
+        protected virtual EInputHandled HandleRightClick() {
+            return EInputHandled.NotHandled;
+            }
+
         /// <summary>Whether we should consume the input, preventing it from reaching the game.</summary>
         /// <param name="keyPressed">The key that was pressed.</param>
         /// <returns>True if it should be consumed, false otherwise.</returns>
@@ -195,13 +290,19 @@ namespace StackSplitRedux.MenuHandlers
         /// <summary>Alternative of OpenSplitMenu which is invoked when the generic inventory handler is clicked.</summary>
         /// <returns>If the input was handled or consumed.</returns>
         protected virtual EInputHandled InventoryClicked() {
-            Debug.Assert(this.HasInventory);
+            // Guard instead of Debug.Assert; see the note on Open above.
+            if (!this.HasInventory) {
+                Log.WarnAlways($"[{nameof(BaseMenuHandler<TMenuType>)}] InventoryClicked called for a menu without an inventory.");
+                return EInputHandled.NotHandled;
+                }
+
             return OpenSplitMenu();
             }
 
         /// <summary>Called when the current handler loses focus when the split menu is open, allowing it to cancel the operation or run the default behaviour.</summary>
         /// <returns>If the input was handled or consumed.</returns>
         protected virtual EInputHandled CancelMove() {
+            Log.TraceIfD($"[{nameof(BaseMenuHandler<TMenuType>)}] {this.GetType().Name}.CancelMove()");
             CloseSplitMenu();
 
             if (this.HasInventory && this.InvHandler.Initialized)
@@ -213,6 +314,7 @@ namespace StackSplitRedux.MenuHandlers
         /// <summary>Callback given to the split menu that is invoked when a value is submitted.</summary>
         /// <param name="s">The user input.</param>
         protected virtual void OnStackAmountReceived(string s) {
+            Log.TraceIfD($"[{nameof(BaseMenuHandler<TMenuType>)}] {this.GetType().Name} received split amount \"{s}\"");
             CloseSplitMenu();
             }
 
@@ -231,7 +333,11 @@ namespace StackSplitRedux.MenuHandlers
                 var inventoryMenu = Mod.Reflection.GetField<IClickableMenu>(this.NativeMenu, "inventory").GetValue() as InventoryMenu;
                 var hoveredItemField = Mod.Reflection.GetField<Item>(this.NativeMenu, "hoveredItem");
 
-                this.InvHandler.Init(inventoryMenu, hoveredItemField);
+                Log.TraceIfD(
+                    $"[{nameof(BaseMenuHandler<TMenuType>)}] {this.GetType().Name}.InitInventory: menu={this.NativeMenu.GetType().Name}, " +
+                    $"inventory={inventoryMenu?.inventory?.Count ?? 0} slots, hoverField={hoveredItemField is not null}"
+                    );
+                this.InvHandler.Init(inventoryMenu, () => hoveredItemField.GetValue());
                 }
             catch (Exception e) {
                 Log.Error($"[{nameof(BaseMenuHandler<TMenuType>)}.{nameof(InitInventory)}] Failed to initialize the inventory handler. Exception:\n{e}");

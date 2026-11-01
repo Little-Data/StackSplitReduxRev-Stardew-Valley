@@ -29,7 +29,15 @@ namespace StackSplitRedux.MenuHandlers
 
         /// <summary>Verifies the conditions to perform the action.</summary>
         public override bool CanPerformAction() {
-            return (this.NativeShopMenu.highlightItemToSell(this.ClickedItem) && this.ClickedItem.Stack > 1);
+            bool sellable = this.NativeShopMenu.highlightItemToSell(this.ClickedItem);
+            bool hasStack = this.ClickedItem.Stack > 1;
+            if (!(sellable && hasStack)) {
+                Log.TraceIfD(
+                    $"[{nameof(SellAction)}] Cannot sell {InventoryHandler.Describe(this.ClickedItem)}: " +
+                    $"sellable={sellable}, stack>1={hasStack}"
+                    );
+                }
+            return sellable && hasStack;
             }
 
         /// <summary>Does the action.</summary>
@@ -53,6 +61,13 @@ namespace StackSplitRedux.MenuHandlers
                     actualInventory[index].Stack = amountRemaining;
                 else
                     actualInventory[index] = null;
+                Log.TraceIfD(
+                    $"[{nameof(SellAction)}] Sold {amount} of {InventoryHandler.Describe(this.ClickedItem)} from slot {index}; " +
+                    $"{amountRemaining} left, price {price}"
+                    );
+                }
+            else {
+                Log.WarnAlways($"[{nameof(SellAction)}] Sold {amount} of {InventoryHandler.Describe(this.ClickedItem)} but could not find its slot");
                 }
 
             Game1.playSound("purchaseClick");

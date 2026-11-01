@@ -1,29 +1,12 @@
 {
   "Name": "StackSplitReduxRev",
   "Author": "pepoluan, tstaples (original idea), little-data",
-  "Version": "0.14.5",
+  "Version": "0.14.6",
   "Description": "Custom stack splitting, originally known as StackSplitX",
   "UniqueID": "littledata.StackSplitReduxRev",
   "EntryDll": "StackSplitReduxRev.dll",
   "MinimumApiVersion": "4.0.0",
   "UpdateKeys": [ "GitHub:Little-Data/StackSplitReduxRev-Stardew-Valley" ],
   "Meta:Repository": "https://github.com/Little-Data/StackSplitReduxRev-Stardew-Valley",
-  "Meta:License": "MIT",
-  "Meta:ChangeLog": {
-    "0.9.0": "Initial release",
-    "0.10.0": "Lots of minor improvements",
-    "0.10.1": "Bugfix for crafting pages",
-    "0.10.2": "Fix updatekeys",
-    "0.11.0": "Internal improvements",
-    "0.12.0": "Add support for Workbench + Cooking",
-    "0.12.1": "Internal optimizations for CraftingPageHandler, Play sound only once for crafting/cooking",
-    "0.13.0": "Implement GMCM support, Lots of internal optimizations, Fix exception if _materialContainers is null",
-    "0.13.1": "",
-    "0.13.2": "Fix bug with determining how many items are being held",
-    "0.14.0": "Automatically cap number to MaxPurchasable",
-    "0.14.1": "BuyAction.CanPerformAction now uses MaxPurchasable instead of simple item.sellPrice",
-    "0.14.2": "Enable animation",
-    "0.14.3": "React properly to <menu>.emergencyShutdown",
-    "0.14.4": "Supports version 1.6 and enhances and fixes many features"
-  }
+  "Meta:License": "MIT"
 }

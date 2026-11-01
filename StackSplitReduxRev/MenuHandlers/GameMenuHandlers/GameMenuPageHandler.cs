@@ -1,5 +1,6 @@
 ﻿using StardewValley;
 using StardewValley.Menus;
+using StackSplitRedux.UI;
 using System;
 
 namespace StackSplitRedux.MenuHandlers
@@ -60,7 +61,7 @@ namespace StackSplitRedux.MenuHandlers
                     $"[{nameof(GameMenuPageHandler<TPageType>)}.{nameof(InitInventory)}] Initializing InventoryHandler " +
                     $"for menu = {inventoryMenu}, hovered = {hoveredItemField}"
                     );
-                this.InventoryHandler.Init(inventoryMenu, hoveredItemField);
+                this.InventoryHandler.Init(inventoryMenu, () => hoveredItemField.GetValue());
                 }
             catch (Exception e) {
                 Log.Error($"[{nameof(GameMenuPageHandler<TPageType>)}.{nameof(InitInventory)}] Failed to initialize the inventory handler:\n{e}");
@@ -75,11 +76,27 @@ namespace StackSplitRedux.MenuHandlers
 
             // This logic is the same for all the page handlers so we can do it here.
             this.InventoryHandler.SelectItem(Game1.getMouseX(true), Game1.getMouseY(true));
+            Log.TraceIfD(
+                $"[{nameof(GameMenuPageHandler<TPageType>)}] Inventory click on page {this.MenuPage?.GetType().Name}: " +
+                $"{InventoryHandler.Describe(this.InventoryHandler.GetHoveredItem())}"
+                );
             if (this.InventoryHandler.CanSplitSelectedItem()) {
                 stackAmount = this.InventoryHandler.GetDefaultSplitStackAmount();
 
                 return EInputHandled.Consumed;
                 }
+
+            // Tell the player why nothing happened instead of silently ignoring the click. The input is consumed so the
+            // game does not also process the click (buying the item, picking it up, ...).
+            Item hovered = this.InventoryHandler.GetHoveredItem();
+            if (ItemSplitRules.IsUnsplittable(hovered)) {
+                Log.TraceIfD($"[{nameof(GameMenuPageHandler<TPageType>)}] Cannot split {InventoryHandler.Describe(hovered)}; showing the hint");
+                CannotSplitHint.Show(hovered);
+                this.InventoryHandler.ClearSelection();
+                stackAmount = 0;
+                return EInputHandled.Consumed;
+                }
+
             return EInputHandled.NotHandled;
             }
 

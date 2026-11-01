@@ -18,6 +18,10 @@ namespace StackSplitRedux.MenuHandlers
         /// <param name="menu">The menu that was opened.</param>
         public override void Open(IClickableMenu menu) {
             base.Open(menu);
+
+            // The base handler rejected an unsupported menu, so there is nothing to prepare here.
+            if (this.NativeMenu is null) return;
+
             this.CraftingPageHandler.Open(menu, this.NativeMenu, this.InvHandler);
             }
 
@@ -31,8 +35,10 @@ namespace StackSplitRedux.MenuHandlers
         /// <returns>If the input was handled or consumed.</returns>
         protected override EInputHandled InventoryClicked() {
             var handled = this.CraftingPageHandler.InventoryClicked(out int stackAmount);
-            if (handled != EInputHandled.NotHandled)
+            if (handled != EInputHandled.NotHandled && stackAmount > 0) {
                 this.SplitMenu = new StackSplitMenu(OnStackAmountReceived, stackAmount);
+                Log.TraceIfD($"[{nameof(CraftingMenuHandler)}] Split box opened on the crafting page, default {stackAmount}");
+                }
             return handled;
             }
 
@@ -40,15 +46,17 @@ namespace StackSplitRedux.MenuHandlers
         /// <returns>If the input was handled or consumed.</returns>
         protected override EInputHandled OpenSplitMenu() {
             var handled = this.CraftingPageHandler.OpenSplitMenu(out int stackAmount);
-            if (handled != EInputHandled.NotHandled)
+            if (handled != EInputHandled.NotHandled && stackAmount > 0) {
                 this.SplitMenu = new StackSplitMenu(OnStackAmountReceived, stackAmount);
+                Log.TraceIfD($"[{nameof(CraftingMenuHandler)}] Split box opened for a recipe, default {stackAmount}");
+                }
             return handled;
             }
 
         /// <summary>Passes the input to the page handler.</summary>
         /// <param name="s">Stack amount the user input.</param>
         protected override void OnStackAmountReceived(string s) {
-            if (int.TryParse(s, out int amount)) {
+            if (int.TryParse(s, out int amount) && amount > 0) {
                 this.CraftingPageHandler.OnStackAmountEntered(amount);
                 }
             base.OnStackAmountReceived(s);

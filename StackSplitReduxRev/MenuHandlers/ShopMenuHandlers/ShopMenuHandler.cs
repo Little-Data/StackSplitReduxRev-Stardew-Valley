@@ -25,6 +25,10 @@ namespace StackSplitRedux.MenuHandlers
         /// <returns>If the input was handled or consumed.</returns>
         protected override EInputHandled InventoryClicked() {
             this.CurrentShopAction = SellAction.Create(this.NativeMenu, this.ClickItemLocation);
+            Log.TraceIfD(
+                $"[{nameof(ShopMenuHandler)}] Inventory click: action={(this.CurrentShopAction is null ? "none" : this.CurrentShopAction.GetType().Name)}, " +
+                $"item={InventoryHandler.Describe(this.CurrentShopAction?.TargetItem)}"
+                );
             return TryOpenSplitMenu(this.CurrentShopAction);
             }
 
@@ -34,6 +38,10 @@ namespace StackSplitRedux.MenuHandlers
             Log.TraceIfD($"[{nameof(ShopMenuHandler)}.{nameof(OpenSplitMenu)}] Entered");
             try {
                 this.CurrentShopAction = BuyAction.Create(this.NativeMenu, this.ClickItemLocation);
+                Log.TraceIfD(
+                    $"[{nameof(ShopMenuHandler)}] Shop click: action={(this.CurrentShopAction is null ? "none" : this.CurrentShopAction.GetType().Name)}, " +
+                    $"item={InventoryHandler.Describe(this.CurrentShopAction?.TargetItem)}"
+                    );
                 }
             catch (Exception e) {
                 Log.Error($"[ShopMenuHandler.OpenSplitMenu] BuyAction.Create failed: {e}");
@@ -70,11 +78,32 @@ namespace StackSplitRedux.MenuHandlers
         /// <summary>Checks if the action can be performed and creates the split menu if it can.</summary>
         /// <param name="action">The action to perform.</param>
         private EInputHandled TryOpenSplitMenu(IShopAction action) {
-            if (action?.CanPerformAction() == true) {
+            if (action is null) return EInputHandled.NotHandled;
+
+            // Non-stackable goods (wallpaper, flooring, furniture, ...) cannot be bought or sold in batches. Say so
+            // instead of opening an amount box that would only ever take one item.
+            bool unsplittable = action is BuyAction
+                ? ItemSplitRules.IsTypeUnsplittable(action.TargetItem)
+                : action is SellAction && ItemSplitRules.IsUnsplittable(action.TargetItem);
+            if (unsplittable) {
+                Log.TraceIfD(
+                    $"[{nameof(ShopMenuHandler)}] {action.GetType().Name} cannot split " +
+                    $"{InventoryHandler.Describe(action.TargetItem)}; showing the hint"
+                    );
+                CannotSplitHint.Show(action.TargetItem);
+                return EInputHandled.Consumed;
+                }
+
+            if (action.CanPerformAction()) {
                 Log.TraceIfD($"[{nameof(ShopMenuHandler)}.{nameof(TryOpenSplitMenu)}] Creating Split Menu");
                 this.SplitMenu = new StackSplitMenu(OnStackAmountReceived, this.CurrentShopAction.StackAmount);
                 return EInputHandled.Consumed;
                 }
+
+            Log.TraceIfD(
+                $"[{nameof(ShopMenuHandler)}] {action.GetType().Name} cannot run for " +
+                $"{InventoryHandler.Describe(action.TargetItem)}; leaving the click to the shop"
+                );
             return EInputHandled.NotHandled;
             }
         }

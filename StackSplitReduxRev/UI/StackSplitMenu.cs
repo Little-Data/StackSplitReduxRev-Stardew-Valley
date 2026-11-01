@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewValley;
+using StardewValley.Menus;
 
 namespace StackSplitRedux.UI
     {
@@ -13,8 +14,13 @@ namespace StackSplitRedux.UI
 
         public StackSplitMenu(TextSubmittedDelegate textSubmittedCallback, int heldStackAmount) {
             this.HeldStackAmount = heldStackAmount;
+            IClickableMenu previousMenu = Game1.activeClickableMenu;
+            Log.TraceIfD(
+                $"[{nameof(StackSplitMenu)}] Opening the amount box over " +
+                $"{previousMenu?.GetType().FullName ?? "none"}, default amount {heldStackAmount}"
+                );
             this.Overlay = new StackSplitOverlay(
-                Game1.activeClickableMenu,
+                previousMenu,
                 heldStackAmount,
                 text => {
                     this.Overlay = null;
@@ -24,6 +30,7 @@ namespace StackSplitRedux.UI
             }
 
         public void Close() {
+            Log.TraceIfD($"[{nameof(StackSplitMenu)}] Closing the amount box");
             if (this.Overlay != null) {
                 this.Overlay.ForceClose();
                 this.Overlay = null;

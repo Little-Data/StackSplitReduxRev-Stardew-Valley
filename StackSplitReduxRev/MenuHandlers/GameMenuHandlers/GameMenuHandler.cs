@@ -39,7 +39,14 @@ namespace StackSplitRedux.MenuHandlers
         public override void Open(IClickableMenu menu) {
             base.Open(menu);
 
+            // The base handler rejected an unsupported menu, so there is nothing to prepare here.
+            if (this.NativeMenu is null) return;
+
             this.Tabs = this.NativeMenu.tabs;
+            Log.TraceIfD(
+                $"[{nameof(GameMenuHandler)}] Opened game menu: currentTab={this.CurrentTab}, tabs={this.Tabs?.Count ?? 0}, " +
+                $"pages={this.NativeMenu.pages?.Count ?? 0}"
+                );
 
             if (!ChangeTabs(this.CurrentTab)) {
                 Log.Trace($"[{nameof(GameMenuHandler)}.{nameof(Open)}] Could not change to tab {this.CurrentTab}");
@@ -76,25 +83,44 @@ namespace StackSplitRedux.MenuHandlers
         /// <summary>Alternative of OpenSplitMenu which is invoked when the generic inventory handler is clicked.</summary>
         /// <returns>If the input was handled or consumed.</returns>
         protected override EInputHandled InventoryClicked() {
-            var handled = this.CurrentPageHandler.InventoryClicked(out int stackAmount);
-            if (handled != EInputHandled.NotHandled)
+            // The tab may have changed without a page handler being available; do nothing rather than throw.
+            IGameMenuPageHandler pageHandler = this.CurrentPageHandler;
+            if (pageHandler is null) return EInputHandled.NotHandled;
+
+            var handled = pageHandler.InventoryClicked(out int stackAmount);
+            // The page may consume the click without opening the box (it showed the "cannot split" hint); only create
+            // the input box when an amount was actually provided.
+            if (handled != EInputHandled.NotHandled && stackAmount > 0) {
                 this.SplitMenu = new StackSplitMenu(OnStackAmountReceived, stackAmount);
+                Log.TraceIfD($"[{nameof(GameMenuHandler)}] Split box opened on tab {this.CurrentTab}: default {stackAmount}");
+                }
+            else {
+                Log.TraceIfD(
+                    $"[{nameof(GameMenuHandler)}] Tab {this.CurrentTab} handled the inventory click without a split box " +
+                    $"(result={handled}, amount={stackAmount})"
+                    );
+                }
             return handled;
             }
 
         /// <summary>Main event that derived handlers use to setup necessary hooks and other things needed to take over how the stack is split.</summary>
         /// <returns>If the input was handled or consumed.</returns>
         protected override EInputHandled OpenSplitMenu() {
-            var handled = this.CurrentPageHandler.OpenSplitMenu(out int stackAmount);
-            if (handled != EInputHandled.NotHandled)
+            IGameMenuPageHandler pageHandler = this.CurrentPageHandler;
+            if (pageHandler is null) return EInputHandled.NotHandled;
+
+            var handled = pageHandler.OpenSplitMenu(out int stackAmount);
+            if (handled != EInputHandled.NotHandled && stackAmount > 0) {
                 this.SplitMenu = new StackSplitMenu(OnStackAmountReceived, stackAmount);
+                Log.TraceIfD($"[{nameof(GameMenuHandler)}] Split box opened from the page content: default {stackAmount}");
+                }
             return handled;
             }
 
         /// <summary>Passes the input to the page handler.</summary>
         /// <param name="s">Stack amount inputted by user.</param>
         protected override void OnStackAmountReceived(string s) {
-            if (int.TryParse(s, out int amount)) {
+            if (this.CurrentPageHandler is not null && int.TryParse(s, out int amount)) {
                 this.CurrentPageHandler.OnStackAmountEntered(amount);
                 }
             base.OnStackAmountReceived(s);
@@ -106,7 +132,7 @@ namespace StackSplitRedux.MenuHandlers
             var mX = Game1.getMouseX(true);
             var mY = Game1.getMouseY(true);
             Log.TraceIfD($"[{nameof(GameMenuHandler)}.{nameof(HandleLeftClick)}] Mouse clicked on ({mX}, {mY})");
-            int tabIndex = this.Tabs.FindIndex(tab => tab.containsPoint(mX, mY));
+            int tabIndex = this.Tabs is not null ? this.Tabs.FindIndex(tab => tab.containsPoint(mX, mY)) : INVALID_TAB;
             if (tabIndex > INVALID_TAB) {
                 Log.TraceIfD($"Changed tab to {tabIndex}");
                 ChangeTabs(tabIndex);
@@ -135,6 +161,10 @@ namespace StackSplitRedux.MenuHandlers
             this.CurrentPageHandler = pageHandler;
 
             var pages = this.NativeMenu.pages;
+            Log.TraceIfD(
+                $"[{nameof(GameMenuHandler)}] Switching to tab {newTab}, page " +
+                $"{(pages is not null && newTab >= 0 && newTab < pages.Count ? pages[newTab]?.GetType().Name : "out of range")}"
+                );
             pageHandler.Open(this.NativeMenu, pages[newTab], this.InvHandler);
 
             return true;

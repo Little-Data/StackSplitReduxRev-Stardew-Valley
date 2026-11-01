@@ -1,7 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 using StardewValley;
 using StardewValley.Menus;
@@ -12,14 +11,19 @@ namespace StackSplitRedux.MenuHandlers
         {
         private readonly Guid GUID = Guid.NewGuid();
 
+        /// <summary>Index of the clicked entry in the shop's for-sale list, or -1 if unknown.</summary>
+        private readonly int ClickedIndex;
+
         private bool? _CanPerformAction = null;
         private int? _MaxPurchasable = null;
 
         /// <summary>Constructs an instance.</summary>
         /// <param name="menu">The native shop menu.</param>
         /// <param name="item">The item to buy.</param>
-        public BuyAction(ShopMenu menu, ISalable item)
+        /// <param name="clickedIndex">Index of the item in <see cref="ShopMenu.forSale"/>, or -1 if unknown.</param>
+        public BuyAction(ShopMenu menu, ISalable item, int clickedIndex = -1)
             : base(menu, item) {
+            this.ClickedIndex = clickedIndex;
             // Default
             if (CanPerformAction())
                 this.Amount = Math.Min(Mod.Config.DefaultShopAmount, GetMaxPurchasable());
@@ -33,17 +37,29 @@ namespace StackSplitRedux.MenuHandlers
         /// <summary>Verifies the conditions to perform the action.</summary>
         public override bool CanPerformAction() {
             if (this._CanPerformAction is null) {
-                var held = Mod.Reflection.GetField<Item>(this.NativeShopMenu, "heldItem").GetValue();
+                Item held;
+                try {
+                    held = Mod.Reflection.GetField<Item>(this.NativeShopMenu, "heldItem").GetValue();
+                    }
+                catch {
+                    held = null;
+                    }
 
-                this._CanPerformAction =
-                    this.ClickedItem is Item chosen    // not null
-                    && chosen.canStackWith(chosen)     // Item type is stackable
-                    && (
-                        held == null                   // not holding anything, or...
-                        || (chosen.canStackWith(held) && held.Stack < held.maximumStackSize())  // item held can stack with chosen and at max
-                        )
-                    && GetMaxPurchasable() > 0         // Can afford
-                    ;
+                // Same conditions as before, but split up so the debug log can show which one failed.
+                bool stackable = this.ClickedItem is not null && this.ClickedItem.canStackWith(this.ClickedItem);
+                bool heldOk = held is null
+                    || (this.ClickedItem is not null
+                        && this.ClickedItem.canStackWith(held)
+                        && held.Stack < held.maximumStackSize());
+                int maxPurchasable = stackable && heldOk ? GetMaxPurchasable() : 0;
+
+                this._CanPerformAction = stackable && heldOk && maxPurchasable > 0;
+
+                Log.TraceIfD(
+                    $"[{nameof(BuyAction)}] CanPerformAction={this._CanPerformAction} for " +
+                    $"{InventoryHandler.Describe(this.ClickedItem)}: stackable={stackable}, heldOk={heldOk} " +
+                    $"(held {InventoryHandler.Describe(held)}), maxPurchasable={maxPurchasable}"
+                    );
                 }
             return this._CanPerformAction.Value;
             }
@@ -74,7 +90,11 @@ namespace StackSplitRedux.MenuHandlers
                 return;
                 }
 
-            Log.Trace($"{pfx} Purchasing {amount} of {chosen.Name}");
+            Log.Trace(
+                $"{pfx} Purchasing {amount} of {InventoryHandler.Describe(chosen)} " +
+                $"(requested stock cap {GetMaxPurchasable()}, max stack {chosen_max}, held {numHeld}), " +
+                $"price index {this.ClickedIndex}"
+                );
 
             // Try to purchase the item - method returns true if it should be removed from the shop since there's no more.
             var purchaseMethod = Mod.Reflection.GetMethod(nativeMenu, "tryToPurchaseItem");
@@ -82,7 +102,22 @@ namespace StackSplitRedux.MenuHandlers
                 Log.TraceIfD($"{pfx} Item is limited, reducing stock");
                 // remove the purchased item from the stock etc.
                 nativeMenu.itemPriceAndStock.Remove(chosen);
-                nativeMenu.forSale.Remove(chosen);
+
+                // Remove the exact entry that was clicked (vanilla behavior). Removing by value could remove a
+                // different entry when a modded shop lists the same item more than once.
+                if (this.ClickedIndex >= 0
+                    && this.ClickedIndex < nativeMenu.forSale.Count
+                    && ReferenceEquals(nativeMenu.forSale[this.ClickedIndex], chosen)) {
+                    nativeMenu.forSale.RemoveAt(this.ClickedIndex);
+                    Log.TraceIfD($"{pfx} Removed for-sale entry {this.ClickedIndex}; {nativeMenu.forSale.Count} entries left");
+                    }
+                else {
+                    nativeMenu.forSale.Remove(chosen);
+                    Log.TraceIfD($"{pfx} Removed the for-sale entry by value; {nativeMenu.forSale.Count} entries left");
+                    }
+                }
+            else {
+                Log.TraceIfD($"{pfx} The shop kept the item in stock (unlimited stock or purchase refused)");
                 }
             }
 
@@ -94,10 +129,13 @@ namespace StackSplitRedux.MenuHandlers
             if (this._MaxPurchasable is null) {
                 var pfx = $"[{nameof(BuyAction)}.{nameof(GetMaxPurchasable)}]";
 
-                Debug.Assert(this.ClickedItem is not null);
-                Item chosen = this.ClickedItem;
+                // Guards instead of Debug.Assert; see the note in BaseMenuHandler.Open.
+                if (this.ClickedItem is not Item chosen) {
+                    Log.Error($"{pfx} No item was clicked!");
+                    this._MaxPurchasable = 0;
+                    return 0;
+                    }
                 var priceAndStockMap = this.NativeShopMenu.itemPriceAndStock;
-                Debug.Assert(priceAndStockMap.ContainsKey(chosen));
 
                 // Calculate the number to purchase
                 if (!priceAndStockMap.TryGetValue(chosen, out var stockInfo)) {
@@ -121,7 +159,12 @@ namespace StackSplitRedux.MenuHandlers
                     Log.TraceIfD($"{pfx} Barter system: player has {currentMonies} of item {stockInfo.TradeItem ?? "null"}");
                     }
                 Log.Trace($"{pfx} chosen item price is {itemPrice}");
-                Debug.Assert(itemPrice > 0);
+                if (itemPrice <= 0) {
+                    // Avoid a division by zero (and the Debug.Assert this replaced).
+                    Log.Error($"{pfx} chosen item {chosen.Name} has an invalid price of {itemPrice}!");
+                    this._MaxPurchasable = 0;
+                    return 0;
+                    }
 
                 this._MaxPurchasable = Math.Min(currentMonies / itemPrice, numInStock);
                 }
@@ -135,8 +178,8 @@ namespace StackSplitRedux.MenuHandlers
         public static ISalable GetClickedShopItem(ShopMenu shopMenu, Point p) {
             var itemsForSale = shopMenu.forSale;
             int index = GetClickedItemIndex(shopMenu, p);
-            Debug.Assert(index < itemsForSale.Count);
-            return index >= 0 ? itemsForSale[index] : null;
+            // Guard instead of Debug.Assert: an out-of-range index would throw (and the assert used to kill the game).
+            return index >= 0 && index < itemsForSale.Count ? itemsForSale[index] : null;
             }
 
         /// <summary>Gets the index of the clicked shop item. This index corresponds to the list of buttons and list of items.</summary>
@@ -154,8 +197,11 @@ namespace StackSplitRedux.MenuHandlers
         /// <param name="mouse">Mouse position.</param>
         /// <returns>The instance or null if no valid item was selected.</returns>
         public static ShopAction Create(ShopMenu shopMenu, Point mouse) {
-            var item = BuyAction.GetClickedShopItem(shopMenu, mouse);
-            return item != null ? new BuyAction(shopMenu, item) : null;
+            int index = BuyAction.GetClickedItemIndex(shopMenu, mouse);
+            if (index < 0 || index >= shopMenu.forSale.Count) return null;
+
+            var item = shopMenu.forSale[index];
+            return item != null ? new BuyAction(shopMenu, item, index) : null;
             }
         }
     }
