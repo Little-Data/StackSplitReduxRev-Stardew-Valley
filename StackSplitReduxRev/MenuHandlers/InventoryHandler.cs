@@ -177,6 +177,12 @@ namespace StackSplitRedux.MenuHandlers
                 Log.TraceIfD($"[{nameof(InventoryHandler)}] CanSplit=false: no item under the cursor");
                 return false;
                 }
+            // Item types the game never splits (including recipe items) must not reach the amount box even when a mod
+            // left a stack larger than one in the inventory. The callers show the "cannot split" hint afterwards.
+            if (ItemSplitRules.IsTypeUnsplittable(hoveredItem)) {
+                Log.TraceIfD($"[{nameof(InventoryHandler)}] CanSplit=false: {Describe(hoveredItem)} is a type that never stacks");
+                return false;
+                }
             if (hoveredItem.Stack <= 1) {
                 Log.TraceIfD($"[{nameof(InventoryHandler)}] CanSplit=false: {Describe(hoveredItem)} has only one item");
                 return false;

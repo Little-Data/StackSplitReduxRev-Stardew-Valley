@@ -48,6 +48,8 @@ namespace StackSplitRedux
     /// <remarks>
     /// The game itself treats these items as unsplittable: tools, weapons, rings, boots, hats, clothing, furniture,
     /// wallpaper and flooring report a maximum stack of 1, and a stack with a single item has nothing to split off.
+    /// Recipe items are special: they unlock a recipe immediately instead of entering the inventory, so they are
+    /// treated as unsplittable even though their item data reports a large maximum stack.
     /// </remarks>
     public static class ItemSplitRules {
         /// <summary>Checks whether the item type never stacks, so no amount of it can ever be split.</summary>
@@ -55,6 +57,11 @@ namespace StackSplitRedux
         public static bool IsTypeUnsplittable(Item item) {
             try {
                 if (item is null) return false;
+
+                // Recipe items (including the ones sold in shops) unlock the recipe as soon as they are bought or
+                // right-clicked, so they never become a stack in the player's inventory. There is nothing to split
+                // off, and buying several would only waste money.
+                if (item.IsRecipe) return true;
 
                 int maxStack = item.maximumStackSize();
                 // The game also uses -1 for items that cannot be picked up at all.
